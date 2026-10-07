@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CC-Quiz</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#172033;background:#f4f6fa}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#f7f9fc,#e9eef7)}
+header{background:#172033;color:white;padding:20px 22px;text-align:center}header h1{font-size:24px;margin:0}
+main{max-width:900px;margin:40px auto;padding:0 18px}.card{background:white;border-radius:18px;padding:30px;box-shadow:0 12px 35px #17203318}
+.row{display:flex;gap:10px;align-items:center}.spacer{flex:1}.muted{color:#667085}.question{font-size:clamp(25px,5vw,44px);line-height:1.25;margin:45px 0 50px;white-space:pre-wrap;min-height:110px}
+button{border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:650;cursor:pointer}.primary{background:#2563eb;color:white}.secondary{background:#e8edf5;color:#172033}
+.progress{height:8px;background:#e7ebf2;border-radius:99px;overflow:hidden;margin:15px 0 25px}.bar{height:100%;background:#2563eb;transition:.2s}
+footer{text-align:center;color:#667085;padding:25px}
+.error{padding:15px;border-radius:10px;background:#fff1f2;color:#9f1239}
+</style>
+</head>
+<body>
+<header><h1>CC-Quiz</h1></header>
+<main>
+<section id="quiz" class="card">
+  <div class="row"><span class="muted" id="counter"></span><span class="spacer"></span><button class="secondary" id="restartBtn">Neue Runde</button></div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <div class="question" id="question">Fragen werden geladen …</div>
+  <div class="row"><button class="primary" id="nextBtn">Nächste Frage</button></div>
+</section>
+<section id="error" class="card" hidden><div class="error">Die Fragen konnten gerade nicht geladen werden. Bitte später erneut versuchen.</div></section>
+</main>
+<footer>CC-Quiz · Zufällige Fragen · ohne Antworten</footer>
+<script>
+let questions=[],order=[],index=0;
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function newRound(){order=shuffle([...Array(questions.length).keys()]);index=0;render()}
+function render(){
+ const total=order.length;
+ document.getElementById("question").textContent=questions[order[index]];
+ document.getElementById("counter").textContent="Frage "+(index+1)+" von "+total;
+ document.getElementById("bar").style.width=((index+1)/total*100)+"%";
+ document.getElementById("nextBtn").textContent=index===total-1?"Runde neu starten":"Nächste Frage";
+}
+async function init(){
+ try{
+  const r=await fetch("./questions.json",{cache:"no-store"});
+  if(!r.ok)throw new Error();
+  const data=await r.json();
+  questions=data.filter(x=>typeof x==="string"&&x.trim());
+  if(!questions.length)throw new Error();
+  newRound();
+ }catch(e){
+  document.getElementById("quiz").hidden=true;
+  document.getElementById("error").hidden=false;
+ }
+}
+document.getElementById("nextBtn").onclick=()=>{if(index<order.length-1){index++;render()}else newRound()};
+document.getElementById("restartBtn").onclick=newRound;
+init();
+</script>
+</body>
+</html>
